@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Stream</title>
+</head>
+<body>
+    <h1>Webcam Stream</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        // 웹캠 스트림을 비디오 요소에 설정
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                setInterval(() => {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const data = canvas.toDataURL('image/jpeg');
+                    console.log("Sending data to server");
+                    fetch('/video_feed', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ image: data })
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.error('Error posting data to server', response.statusText);
+                        }
+                    }).catch(error => {
+                        console.error('Error posting data to server', error);
+                    });
+                }, 100); // 100ms 마다 이미지 전송
+            })
+            .catch(error => {
+                console.error("Error accessing webcam: ", error);
+            });
+    </script>
+</body>
+</html>
